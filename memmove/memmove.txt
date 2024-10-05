@@ -1,0 +1,5 @@
+I really want to understand how the built-in "Copy" function in Go works.
+I've noticed that it's implementation isn't available, and that's because underneath the hood,
+it's calling an assembly code to the copy function.
+
+//TODO: continue with the assembly code of copy
