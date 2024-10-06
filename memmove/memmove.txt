@@ -1,5 +1,75 @@
 I really want to understand how the built-in "Copy" function in Go works.
 I've noticed that it's implementation isn't available, and that's because underneath the hood,
-it's calling an assembly code to the copy function.
+it's calling an assembly code. Once the Go compiler see the copy function, it calls the assembly instruction
+to perform the copy function.
 
-//TODO: continue with the assembly code of copy
+Let's start with the register map.
+
+// Register map
+//
+// dstin  R0
+// src    R1
+// count  R2
+// dst    R3 (same as R0, but gets modified in unaligned cases)
+// srcend R4
+// dstend R5
+// data   R6-R17
+// tmp1   R14
+
+// func memmove(to, from unsafe.Pointer, n uintptr)
+
+R0 - Holds the destination pointer "to"
+R1 - Holds the source pointer "from"
+R2 - Holds the size n, the number of bytes to copy.
+R4 - Holds the pointer to the end of the source region (from + n)
+R5 - Holds the pointer to the end of the destination region (to + n)
+R6-R17 - Used to hold intermediate data when copying between source and destination.
+       - These registers are used to store data temporarily as the function loads from the source
+       - and stores to the destination in chunks. (e.g, 8 or 16 bytes at a time.)
+R14 - Used as temporary register for calculation and operation that require an extra register.
+
+
+
+// The CBZ instruction checks if R2 (the count of bytes to copy) is zero. if it is,
+// the function branches to copy0, where it can quickly return.
+// This could be a performance optimization since there's no more copying need to perform
+
+CBZ	r2, copy0
+
+// Small copies: 1-16 bytes
+// This compares R2 (the byte count n) to immediate value $16
+// e.g., []byte{1,2,3} is 3 bytes in Go, and it will compare to the immediate value of 16, to determine whether
+// the size of bytes to be copied will be greater or less than 16.
+// if R2(or n) is less than or equal to $16, the program jumps to copy16, which handles small copies of 16 bytes.
+// Small copies can be handled more efficiently with specific instructions tailored for copying a few bytes.
+
+CMP	$16, R2
+BLE	copy16 	
+
+
+// Large copies
+// This section checks if the number of bytes to copy exceeds certain threshold
+// (128 and 32)
+// If R2, which is the source pointer, is greater than 128 it branches to copy_long, which
+// will handle large memory transfer.
+// if it's greater than 32, but less than or equal to 128
+ 
+CMP $128, R2
+BHI copy_long
+CMP $32, R2
+BHI copy32_128
+
+// Small copies: 17..32 bytes
+
+LDP (R1), (R6, R7) // Load two registers (R6, R7) from the memory location pointed to by R1.
+ADD R1, R2, R4 // Set R4 to point just past the last byte
+
+
+
+
+
+
+
+
+
+
