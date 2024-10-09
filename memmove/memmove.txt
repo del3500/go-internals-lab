@@ -60,14 +60,63 @@ CMP $32, R2
 BHI copy32_128
 
 // Small copies: 17..32 bytes
+// Load two words (64 bits) from the src into R6 and R7. This is a fast way to read multiple bytes at once.
+// (e.g., R1 points to the start of some data in memory 0x1000)
+// R6 will hold the first 64-bits, which is 8bytes, so R6 will now contain the content of 0x1000 to 0x1007
+// R7 will hold the second 64-bits, so R7 will contain the memory of 0x1008 to 0x100F
+// It's fast way of copying 16 bytes, (which is the purpose of Small copy: 17..32 bytes) by just using one assembly instruction.
 
-LDP (R1), (R6, R7) // Load two registers (R6, R7) from the memory location pointed to by R1.
-ADD R1, R2, R4 // Set R4 to point just past the last byte
+// The ADD instruction calculates the end of the source data and set R4 to point just past the last byte.
+// R1 points to the start of some data in memory, then add R2, which is the number of bytes to be copied.
+// now R4 will point to just past the last byte.
+
+// the second LDP instruction loads two 64 bits from the offset -16(R4) which where R1 points to earlier.
+// Now R6, R7, R12, and R13 basically has the same contents.
+
+// STP Stores the value of R6 and R7 to R0 (the destination register), effectively copying the first part of the data.
+
+// ADD R0, R2, R5 calculates the end destination area, settings R5(dstend/destination end) to point just past the last destination byte.
+// In this section, R0 points to the destination, and ADD was used to add R2, which is the number of bytes to be copied and put the result to R5.
+
+// The seocnd STP instruction stores previously loaded values from R12 and R13 into the destination memory.
+
+// RET retursn from the function completing the copy operation.
 
 
 
 
+LDP (R1), (R6, R7) 
+ADD R1, R2, R4 
+LDP -16(R4), (R12,R13)
+STP (R6, R7), (R0)
+ADD R0, R2, R5
+STP (R12, R13), -16(R5)
+RET
 
+
+0x1000 - 0x1015 = R6
+0x1016 - 0x1031 = R7 
+
+0x1000 + 32: 0x1032 = R4
+
+0x1000 - 0x1015 = R13
+0x1016 - 0x1031 = R14
+
+R0 - Holds the destination pointer "to"
+  6 R1 - Holds the source pointer "from"
+  7 R2 - Holds the size n, the number of bytes to copy.
+  8 R4 - Holds the pointer to the end of the source region (from + n)
+  9 R5 - Holds the pointer to the end of the destination region (to + n)
+ 10 R6-R17 - Used to hold intermediate data when copying between source and destination.
+ 11        - These registers are used to store data temporarily as the function loads from the source
+ 12        - and stores to the destination in chunks. (e.g, 8 or 16 bytes at a time.)
+ 13 R14 - Used as temporary register for calculation and operation that require an
+
+R1 (src) 32 bytes -> R6 0-15 bytes - R7 17-32 bytes
+R1 + R2 = R4 (which is the 33rd byte from byte 0)
+R12 now have the first 16 bytes of memory starting from R4 - 16
+R13 now have the second 16 bytes, which is 17-32 bytes
+Destination pointer R0 now has the bytes of R1
 
 
 
