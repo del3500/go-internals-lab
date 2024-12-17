@@ -1,0 +1,29 @@
+What makes TCP reliable?
+
+- TCP is reliable because it overcomes the effects of packet loss or receiving packets out of order.
+- Packet loss occurs when data fails to reach its destination -- typically because of data tranmission errors.
+    - (such as wireless network interference) or network congestion.
+- Network congestion happens when node attempts to send  more data over a network connection than the
+  connection can handle, causing the nodes to discard the excess packets.
+  - e.g., A node cannot send at a rate of 1 gigabit per second (GBPS) over a 10 megabit-per-second (Mbps) connection.
+    The 10Mbps connection quickly become saturated, and nodes involved in the flow of the data drop the excess data.
+
+Estabilishing a "Session" with the TCP Handshake
+
+- A TCP connection uses a three-way handshake to introduce the client to the server and the server to the client.
+
+                    +-------------------------+
+                    |client             server|
+                    |_________________________|
+                    |                         |
+               dial | ---------SYN--------->  | listen
+                    |                         | accept
+         established| <------SYN/ACK--------  |
+                    |                         |
+                    | ---------ACK--------->  | established
+                    |_________________________|
+
+- Before establishing a TCP connection, a server must listen for incoming connection.s
+    - client refers to the dialing node, while server refers to the listening node.
+    - TCP itself doesn't have a concept of client and server, but an established sesssion
+      between two nodes, whereby one node reaches out to another node to establish the session.
