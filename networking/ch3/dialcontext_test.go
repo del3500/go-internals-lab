@@ -10,7 +10,7 @@ import (
 
 func TestDialContext(t *testing.T) {
 	dl := time.Now().Add(5 * time.Second)
-	ctx, _ := context.WithDeadline(context.Background(), dl)
+	ctx, cancel := context.WithDeadline(context.Background(), dl)
 	defer cancel()
 
 	var d net.Dialer
