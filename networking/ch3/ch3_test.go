@@ -1,6 +1,7 @@
 package ch03
 
 import (
+	"fmt"
 	"io"
 	"net"
 	"testing"
@@ -27,7 +28,6 @@ func TestDial(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	// A channel to allow communication between the main test function
 	// and the goroutines
 	done := make(chan struct{})
@@ -45,7 +45,13 @@ func TestDial(t *testing.T) {
 				return
 			}
 
-			go handleConnection(conn, done, t)
+			go func(c net.Conn) {
+				if err := handleConnection(conn, done); err != nil {
+					t.Log(err)
+					return
+				}
+			}(conn)
+
 		}
 	}()
 
@@ -60,7 +66,7 @@ func TestDial(t *testing.T) {
 	<-done
 }
 
-func handleConnection(c net.Conn, done chan struct{}, t *testing.T) {
+func handleConnection(c net.Conn, done chan struct{}) error {
 	defer func() {
 		c.Close()
 		done <- struct{}{}
@@ -68,13 +74,15 @@ func handleConnection(c net.Conn, done chan struct{}, t *testing.T) {
 
 	buf := make([]byte, 1024)
 	for {
-		n, err := c.Read(buf)
+		_, err := c.Read(buf)
 		if err != nil {
 			if err != io.EOF {
-				t.Error(err)
+				fmt.Errorf("%v", err)
+				return err
 			}
-			return
+			fmt.Errorf("%v", err)
+			return err
 		}
-		t.Logf("received: %q", buf[:n])
 	}
+	return nil
 }
